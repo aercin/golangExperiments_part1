@@ -38,6 +38,8 @@ func NewConsumer(ch *amqp.Channel, cfg *configs.Config) (Consumer, error) {
 
 func (c *consumer) ConsumeMessages(ctx context.Context, cb func([]byte) bool) error {
 
+	fmt.Println("Incoming messages are listening...")
+
 	msgs, err := c.ch.Consume(
 		c.queue_name, // queue
 		"",           // consumer
@@ -52,22 +54,14 @@ func (c *consumer) ConsumeMessages(ctx context.Context, cb func([]byte) bool) er
 		return err
 	}
 
-	var forever chan struct{}
-
-	go func() {
-		for msg := range msgs {
-			isSuccessed := cb(msg.Body)
-			if isSuccessed {
-				msg.Ack(false)
-			} else {
-				msg.Nack(false, true)
-			}
+	for msg := range msgs {
+		isSuccessed := cb(msg.Body)
+		if isSuccessed {
+			msg.Ack(false)
+		} else {
+			msg.Nack(false, true)
 		}
-	}()
-
-	fmt.Println("Incoming messages are listening...")
-
-	<-forever
+	}
 
 	return nil
 }
